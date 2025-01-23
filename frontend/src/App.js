@@ -1,7 +1,16 @@
 import { useEffect, useState } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import axios from "axios";
-import WorkoutForm from "./components/WorkoutForm.js"; 
-import WorkoutList from "./components/WorkoutList.js"; 
+
+// Import components
+import Navbar from "./components/Navbar";
+
+// Import pages
+import Login from "./components/Auth/Login";
+import SignUp from "./components/Auth/SignUp";
+import Workouts from "./pages/Workouts"
+// Import context
+import { AuthProvider } from "./context/AuthContext";
 
 function App() {
   const [workouts, setWorkouts] = useState([]); // State to store workouts
@@ -11,10 +20,11 @@ function App() {
   useEffect(() => {
     const fetchWorkouts = async () => {
       try {
-        const response = await axios.get("http://localhost:4000/api/workouts"); 
+        const response = await axios.get("http://localhost:4000/api/workouts");
         setWorkouts(response.data);
-      } catch (error) {
-        console.error("Error fetching workouts:", error);
+      } catch (err) {
+        console.error("Error fetching workouts:", err);
+        setError("Failed to fetch workouts.");
       }
     };
 
@@ -24,16 +34,20 @@ function App() {
   // Handle adding a new workout
   const handleAddWorkout = async (newWorkout) => {
     try {
-      const response = await axios.post("http://localhost:4000/api/workouts", newWorkout, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await axios.post(
+        "http://localhost:4000/api/workouts",
+        newWorkout,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       // Update the workout list with the new workout
       setWorkouts([response.data, ...workouts]);
-    } catch (error) {
-      console.error("Error adding workout:", error);
+    } catch (err) {
+      console.error("Error adding workout:", err);
       setError("Failed to add workout. Please try again.");
     }
   };
@@ -44,45 +58,50 @@ function App() {
       await axios.delete(`http://localhost:4000/api/workouts/${id}`);
       // Remove the workout from the state
       setWorkouts(workouts.filter((workout) => workout._id !== id));
-    } catch (error) {
-      console.error("Error deleting workout:", error);
+    } catch (err) {
+      console.error("Error deleting workout:", err);
       setError("Failed to delete workout. Please try again.");
     }
   };
 
-  // Handle editing a workout
+  // Handle editing a workout (placeholder for now)
   const handleEditWorkout = (workout) => {
-    // This can be implemented in a way to show the WorkoutForm with pre-filled values for editing.
     console.log("Edit workout", workout);
   };
 
   return (
-    <div className="App">
-      <header>
-        <div className="container">
-          <a href="/">
-            <h1>Workout Buddy</h1>
-          </a>
+    <AuthProvider>
+      <Router>
+        <div className="App">
+          {/* Add Navbar */}
+          <Navbar />
+
+          <div className="pages">
+            <Routes>
+              {/* Home Page */}
+              <Route
+                path="/"
+                element={
+                  <Workouts
+                    workouts={workouts}
+                    onDeleteWorkout={handleDeleteWorkout}
+                    onEditWorkout={handleEditWorkout}
+                    onAddWorkout={handleAddWorkout}
+                    error={error}
+                  />
+                }
+              />
+
+              {/* Login Page */}
+              <Route path="/login" element={<Login />} />
+
+              {/* Sign Up Page */}
+              <Route path="/signup" element={<SignUp />} />
+            </Routes>
+          </div>
         </div>
-      </header>
-
-      <div className="pages">
-        <div className="home">
-          {/* Display any errors */}
-          {error && <div className="error">{error}</div>}
-
-          {/* List of workouts */}
-          <WorkoutList
-            workouts={workouts}
-            onDeleteWorkout={handleDeleteWorkout}
-            onEditWorkout={handleEditWorkout}
-          />
-
-          {/* Form to add a workout */}
-          <WorkoutForm onAddWorkout={handleAddWorkout} />
-        </div>
-      </div>
-    </div>
+      </Router>
+    </AuthProvider>
   );
 }
 
